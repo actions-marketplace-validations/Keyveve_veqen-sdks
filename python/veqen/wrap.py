@@ -14,7 +14,7 @@ import time
 from typing import Any
 
 from veqen.client import client as _client
-from veqen.client import current_tags
+from veqen.client import current_tags, key_hint
 from veqen.pricing import Usage, price_book
 
 log = logging.getLogger("veqen")
@@ -212,10 +212,11 @@ class _Managed:
 
 class _Proxy:
     def __init__(self, target: Any, provider: str, path: tuple, defaults: dict, residency: str | None,
-                 host: str | None = None) -> None:
+                 host: str | None = None, hint: str | None = None) -> None:
         self._target, self._provider, self._path = target, provider, path
         self._defaults, self._residency = defaults, residency
         self._host = host  # the provider behind the client's base URL, when it isn't the SDK's own
+        self._hint = hint  # the client's key, its last four characters
 
     def __getattr__(self, name: str) -> Any:
         attr = getattr(self._target, name)
@@ -224,7 +225,7 @@ class _Proxy:
         if path in methods and callable(attr):
             return self._instrument(attr, path)
         if any(m[: len(path)] == path for m in methods):
-            return _Proxy(attr, self._provider, path, self._defaults, self._residency, self._host)
+            return _Proxy(attr, self._provider, path, self._defaults, self._residency, self._host, self._hint)
         return attr
 
     def _instrument(self, fn, path: tuple):
@@ -253,6 +254,7 @@ class _Proxy:
                         _client.record(
                             source, str(model), usage, tags=tags, service_tier=tier, residency=self._residency,
                             variant=rest[0] if rest else None, latency_ms=int((time.monotonic() - started) * 1000),
+                            key_hint=self._hint,
                         )
                 except Exception:  # noqa: BLE001 - the call already succeeded; recording must never break it
                     log.exception("Veqen couldn't record a %s call", provider)
@@ -306,5 +308,7 @@ def wrap(client: Any, *, residency: str | None = None, provider: str | None = No
     family = _detect(client)
     url = getattr(client, "base_url", None)
     host = provider or _CLOUDS.get(type(client).__name__) or price_book().provider_for_url(url)
+    key = getattr(client, "api_key", None) or getattr(client, "aws_access_key", None) or getattr(
+        getattr(client, "_api_client", None), "api_key", None)  # OpenAI, Anthropic, Anthropic on Bedrock, Google GenAI
     return _Proxy(client, family, (), {k: str(v) for k, v in default_tags.items()}, residency,
-                  host if host and host != family else None)
+                  host if host and host != family else None, key_hint(key))

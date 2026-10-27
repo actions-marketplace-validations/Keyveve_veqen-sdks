@@ -2,7 +2,7 @@
 // pointed at other hosts (Together, Fireworks, Groq, DeepInfra, xAI...) and the image, speech, transcription
 // and embedding endpoints. A thin Proxy that only intercepts methods producing model output and reads the
 // usage the provider already returns.
-import { check, currentTags, record } from "./core.js";
+import { check, currentTags, keyHint, record } from "./core.js";
 import { lookup, providerForUrl } from "./pricing.js";
 
 const MEDIA = ["images.generate", "images.edit", "audio.speech.create", "audio.transcriptions.create", "audio.translations.create"];
@@ -89,7 +89,7 @@ async function* observe(stream, acc) {
   }
 }
 
-function instrument(fn, target, provider, path, defaults, residency, host) {
+function instrument(fn, target, provider, path, defaults, residency, host, hint) {
   return function veqenInstrumented(params = {}, ...rest) {
     const tags = { ...defaults, ...currentTags() };
     check(tags);
@@ -104,7 +104,7 @@ function instrument(fn, target, provider, path, defaults, residency, host) {
       try {
         const source = host ?? provider;
         const model = found.model && (lookup(found.model, source) || !params.model) ? found.model : params.model;
-        if (model) record(source, String(model), found.usage, { tags, serviceTier: found.tier, residency, variant: found.variant, latencyMs: Math.round(performance.now() - started) });
+        if (model) record(source, String(model), found.usage, { tags, serviceTier: found.tier, residency, variant: found.variant, latencyMs: Math.round(performance.now() - started), keyHint: hint });
       } catch (error) {
         console.warn(`[veqen] couldn't record a ${provider} call: ${error.message}`); // the call itself succeeded
       }
@@ -132,15 +132,15 @@ function instrument(fn, target, provider, path, defaults, residency, host) {
   };
 }
 
-function proxy(target, provider, prefix, defaults, residency, host) {
+function proxy(target, provider, prefix, defaults, residency, host, hint) {
   return new Proxy(target, {
     get(obj, key, receiver) {
       const value = Reflect.get(obj, key, receiver);
       if (typeof key !== "string") return value;
       const path = prefix ? `${prefix}.${key}` : key;
       const methods = METHODS[provider];
-      if (methods.includes(path) && typeof value === "function") return instrument(value, obj, provider, path, defaults, residency, host);
-      if (value && typeof value === "object" && methods.some((m) => m.startsWith(path + "."))) return proxy(value, provider, path, defaults, residency, host);
+      if (methods.includes(path) && typeof value === "function") return instrument(value, obj, provider, path, defaults, residency, host, hint);
+      if (value && typeof value === "object" && methods.some((m) => m.startsWith(path + "."))) return proxy(value, provider, path, defaults, residency, host, hint);
       return value;
     },
   });
@@ -164,5 +164,7 @@ export function wrap(client, { residency, provider, ...defaultTags } = {}) {
   // Anthropic's clients for the clouds bill through the cloud, whose regional hosts no URL map can list
   const cloud = { AnthropicBedrock: "bedrock", AnthropicVertex: "google" }[client?.constructor?.name];
   const host = provider ?? cloud ?? providerForUrl(client?.baseURL);
-  return proxy(client, family, "", tags, residency, host && host !== family ? host : undefined);
+  // OpenAI, Anthropic, Anthropic on Bedrock and Google GenAI keep the key in different places; only its last four characters are sent
+  const hint = keyHint(client?.apiKey ?? client?.awsAccessKey ?? client?.apiClient?.clientOptions?.apiKey);
+  return proxy(client, family, "", tags, residency, host && host !== family ? host : undefined, hint);
 }

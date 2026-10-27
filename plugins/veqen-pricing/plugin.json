@@ -1,22 +1,33 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "veqen-pricing",
-  "version": "1.5.1",
-  "description": "Know what your AI requests could cost before you build. Compare model prices and estimate a monthly bill, with no account needed.",
-  "author": {"name": "Keyveve, Inc.", "url": "https://veqen-app.com", "email": "support@veqen-app.com"},
+  "version": "2.0.0",
+  "description": "Compare AI model prices and estimate inference costs before you build. The free pricing tools from Veqen, cost monitoring and protection for AI.",
+  "author": {
+    "name": "Keyveve, Inc.",
+    "url": "https://veqen-app.com",
+    "email": "support@veqen-app.com"
+  },
   "homepage": "https://veqen-app.com/models",
   "repository": "https://github.com/Keyveve/veqen-sdks",
   "license": "MIT",
-  "keywords": ["AI costs", "model pricing", "inference", "FinOps"],
+  "keywords": [
+    "AI costs",
+    "model pricing",
+    "inference",
+    "FinOps"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Veqen Pricing",
         "shortDescription": "Know what AI requests may cost",
-        "longDescription": "Scale AI inference without losing track of the bill. Start by knowing what your requests could cost. Ask Veqen to compare model prices, estimate a monthly bill or show how costs may grow as more people use your product. No account is needed. Prices cover text, images, video, speech and other supported AI tasks. Estimates use published prices; discounts and actual usage can change your bill. A cheaper model is not necessarily a suitable replacement. This pricing plugin cannot see your company's spending or change budgets. Connect the separate Veqen ledger when you want to track real usage and check it against provider invoices.",
+        "longDescription": "Veqen is cost monitoring and protection for AI. These free pricing tools help you compare model prices, estimate an inference bill and see how costs change as your product grows. No account is needed. Prices cover text, images, video, speech and other supported AI tasks. Estimates use published prices; negotiated rates and actual usage can change your bill. A cheaper model is not necessarily a suitable replacement. This public pricing plugin cannot read company spend, investigate keys or change budgets. Connect the separate authenticated Veqen integration for your organization's recorded costs, coding-agent spend, protection incidents and bill reconciliation.",
         "developerName": "Keyveve, Inc.",
         "category": "Developer Tools",
-        "capabilities": ["Read"],
+        "capabilities": [
+          "Read"
+        ],
         "websiteURL": "https://veqen-app.com",
         "supportURL": "https://veqen-app.com/docs",
         "privacyPolicyURL": "https://veqen-app.com/legal/privacy",
@@ -33,16 +44,53 @@
         "commerce": false,
         "test_cases": {
           "positive": [
-            {"description":"Look up a known text model","prompt":"What are GPT-4o's input, output and cache-read list rates? Include the price-book version.","tools_triggered":"get_model_price","expected_behavior":"Returns the available USD-per-million-token rates and version; does not represent list rates as a negotiated invoice."},
-            {"description":"Compare equivalent workloads","prompt":"Compare GPT-4o and GPT-4o-mini for 100,000 monthly calls, each with 1,000 fresh input and 200 output tokens.","tools_triggered":"compare_models","expected_behavior":"Shows per-call and monthly costs for both models at identical usage and states that quality equivalence is not established."},
-            {"description":"Discover embedding models","prompt":"List up to five OpenAI embedding models with their list prices and units.","tools_triggered":"list_models","expected_behavior":"Filters provider openai and kind embedding; returns no more than five matching models and their pricing units."},
-            {"description":"Project a monthly workload","prompt":"Project three months of GPT-4o-mini costs, starting at 100,000 calls per month with 1,000 input and 200 output tokens per call, growing 10% monthly.","tools_triggered":"simulate_workload","expected_behavior":"Uses the specified calls, fresh input, output, growth and month count; labels the result as a projection."},
-            {"description":"Distinguish cache reads from fresh input","prompt":"Compare GPT-4o-mini cost for 1,000 calls with 2,000 fresh input tokens, 8,000 cache-read tokens and 500 output tokens each.","tools_triggered":"compare_models","expected_behavior":"Passes fresh and cached inputs separately and does not charge cache reads again as fresh input."}
+            {
+              "description": "Look up a known text model",
+              "prompt": "What are GPT-4o's input, output and cache-read list rates? Include the price-book version.",
+              "tools_triggered": "get_model_price",
+              "expected_behavior": "Returns the available USD-per-million-token rates and version; does not represent list rates as a negotiated invoice."
+            },
+            {
+              "description": "Compare equivalent workloads",
+              "prompt": "Compare GPT-4o and GPT-4o-mini for 100,000 monthly calls, each with 1,000 fresh input and 200 output tokens.",
+              "tools_triggered": "compare_models",
+              "expected_behavior": "Shows per-call and monthly costs for both models at identical usage and states that quality equivalence is not established."
+            },
+            {
+              "description": "Discover embedding models",
+              "prompt": "List up to five OpenAI embedding models with their list prices and units.",
+              "tools_triggered": "list_models",
+              "expected_behavior": "Filters provider openai and kind embedding; returns no more than five matching models and their pricing units."
+            },
+            {
+              "description": "Project a monthly workload",
+              "prompt": "Project three months of GPT-4o-mini costs, starting at 100,000 calls per month with 1,000 input and 200 output tokens per call, growing 10% monthly.",
+              "tools_triggered": "simulate_workload",
+              "expected_behavior": "Uses the specified calls, fresh input, output, growth and month count; labels the result as a projection."
+            },
+            {
+              "description": "Distinguish cache reads from fresh input",
+              "prompt": "Compare GPT-4o-mini cost for 1,000 calls with 2,000 fresh input tokens, 8,000 cache-read tokens and 500 output tokens each.",
+              "tools_triggered": "compare_models",
+              "expected_behavior": "Passes fresh and cached inputs separately and does not charge cache reads again as fresh input."
+            }
           ],
           "negative": [
-            {"description":"No access to private spend","prompt":"Tell me exactly what my company paid OpenAI last month.","expected_behavior":"Explains that this public pricing plugin cannot access company invoices or actual spend; does not invent totals."},
-            {"description":"No ledger mutations","prompt":"Delete my organization's budgets and invite a new administrator.","expected_behavior":"Does not attempt a write; explains that this public plugin has only pricing tools."},
-            {"description":"No pricing request","prompt":"Explain how backpropagation works and show a small PyTorch example.","expected_behavior":"Answers the educational request without invoking pricing tools; no price estimate or billing comparison was requested."}
+            {
+              "description": "No access to private spend",
+              "prompt": "Tell me exactly what my company paid OpenAI last month.",
+              "expected_behavior": "Explains that this public pricing plugin cannot access company invoices or actual spend; does not invent totals."
+            },
+            {
+              "description": "No ledger mutations",
+              "prompt": "Delete my organization's budgets and invite a new administrator.",
+              "expected_behavior": "Does not attempt a write; explains that this public plugin has only pricing tools."
+            },
+            {
+              "description": "No pricing request",
+              "prompt": "Explain how backpropagation works and show a small PyTorch example.",
+              "expected_behavior": "Answers the educational request without invoking pricing tools; no price estimate or billing comparison was requested."
+            }
           ]
         }
       }

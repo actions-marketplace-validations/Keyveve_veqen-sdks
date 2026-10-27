@@ -8,7 +8,7 @@ from litellm.integrations.custom_logger import CustomLogger
 
 from veqen.client import client, current_tags
 from veqen.integrations._litellm_payload import _object, standard_call
-from veqen.integrations.litellm import callback
+from veqen.integrations.litellm import callback, provider_key_hint
 from veqen.pricing import Usage
 
 log = logging.getLogger("veqen")
@@ -42,6 +42,7 @@ class VeqenLogger(CustomLogger):
                 ) if name in event}},
                 cost_usd=event["cost_usd"], latency_ms=event["latency_ms"],
                 service_tier=event["service_tier"], status=event["status"],
+                key_hint=provider_key_hint(_object(kwargs.get("litellm_params"))),
             )
         except (KeyError, TypeError, ValueError, OverflowError, OSError):
             log.warning("Veqen skipped invalid LiteLLM cost metadata")

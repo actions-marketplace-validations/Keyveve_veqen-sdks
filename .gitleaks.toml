@@ -11,3 +11,8 @@ regexes = ['''^test-secret-key-that-is-long-enough-0123456789$''']
 description = "Documentation example of a non-secret idempotency identifier"
 regexTarget = "secret"
 regexes = ['''^signup-7f3e2a91$''']
+
+[[allowlists]]
+description = "Exact synthetic provider key used to verify last-four-character hints; never a real credential"
+regexTarget = "secret"
+regexes = ['''^sk-proj-abcdefghijklmnop1x9Z$''']

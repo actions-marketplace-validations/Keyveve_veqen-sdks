@@ -18,6 +18,9 @@ function billedBy(provider, price) {
 }
 
 const TAG_KEYS = ["customer", "feature", "user", "project", "environment", "run"];
+
+/** A provider key's last four characters: all Veqen ever sees of it, matched to the provider's own key list. */
+export const keyHint = (key) => (typeof key === "string" && key.length >= 16 && /^[A-Za-z0-9_+/=.-]{4}$/.test(key.slice(-4)) ? key.slice(-4) : undefined);
 const storage = new AsyncLocalStorage();
 
 export class BudgetExceeded extends Error {
@@ -116,7 +119,7 @@ export function check(tags) {
  * video and transcription, characters for speech, queries for rerank, pages for OCR. `variant` is an image
  * size and quality ("hd/1024x1792") or a video resolution ("1080p").
  */
-export function record(provider, model, usage, { tags = currentTags(), batch = false, serviceTier, residency, variant, latencyMs, costUsd } = {}) {
+export function record(provider, model, usage, { tags = currentTags(), batch = false, serviceTier, residency, variant, latencyMs, costUsd, providerKey, keyHint: hint = keyHint(providerKey) } = {}) {
   ensure();
   const u = {
     inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, cacheWrite1hTokens: 0,
@@ -151,6 +154,7 @@ export function record(provider, model, usage, { tags = currentTags(), batch = f
     tags: Object.fromEntries(Object.entries(tags).filter(([k]) => !TAG_KEYS.includes(k))),
     latency_ms: latencyMs ?? null,
     status: "ok",
+    ...(hint ? { key_hint: hint } : {}),
   };
   if (costUsd) {
     for (const b of state.budgets) {

@@ -1,7 +1,7 @@
 {
   "name": "@veqen/sdk",
-  "version": "1.1.1",
-  "description": "Scale AI inference without losing track of the bill. Track what AI requests cost by customer, feature or project. Includes the veqen CLI.",
+  "version": "1.2.0",
+  "description": "What every AI request costs, by customer, feature or project, with the key hint that lets Veqen catch stolen keys. Includes the veqen CLI, with an offline coding-agent bill.",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",

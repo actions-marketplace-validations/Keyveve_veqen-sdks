@@ -64,7 +64,7 @@ export declare function record(
   provider: string | null,
   model: string,
   usage: Usage,
-  options?: CostOptions & { tags?: Tags; latencyMs?: number; costUsd?: number },
+  options?: CostOptions & { tags?: Tags; latencyMs?: number; costUsd?: number; /** the provider key the call used: only its last four characters are sent */ providerKey?: string },
 ): LedgerEvent;
 export declare function flush(): Promise<boolean>;
 export declare function cost(model: string, usage: Usage, options?: CostOptions): number | null;

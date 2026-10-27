@@ -10,11 +10,24 @@ Per-request tags come from ``metadata={"veqen": {"customer": "acme"}}`` or ``veq
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
-from veqen.client import client, current_tags
+from veqen.client import client, current_tags, key_hint
 from veqen.pricing import Usage
 from veqen.wrap import _usage_openai
+
+
+def provider_key_hint(params: dict) -> str | None:
+    """The hint of the provider key LiteLLM used: the one passed in, else the provider's usual environment variable
+    (LiteLLM reads OPENAI_API_KEY, ANTHROPIC_API_KEY and so on when none is passed). A reference such as
+    "os.environ/OPENAI_API_KEY" is never mistaken for the key."""
+    key = params.get("api_key")
+    if params.get("api_base") and not isinstance(key, str):
+        return None  # a proxy or another host: its key isn't the provider's usual variable
+    if not isinstance(key, str) or key.startswith("os.environ/"):
+        key = os.environ.get(f"{str(params.get('custom_llm_provider') or '').upper()}_API_KEY")
+    return key_hint(key)
 
 
 def callback(kwargs: dict, response: Any, start_time: Any = None, end_time: Any = None) -> None:
@@ -38,4 +51,5 @@ def callback(kwargs: dict, response: Any, start_time: Any = None, end_time: Any 
         variant=variant,
         latency_ms=latency,
         cost_usd=kwargs.get("response_cost"),  # kept only for models Veqen's price book doesn't know
+        key_hint=provider_key_hint(params),
     )

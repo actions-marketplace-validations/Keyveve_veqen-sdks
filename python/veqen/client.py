@@ -11,6 +11,7 @@ import contextvars
 import json
 import logging
 import os
+import re
 import threading
 import time
 import urllib.error
@@ -25,6 +26,13 @@ from veqen.pricing import Price, Usage, price_book
 
 log = logging.getLogger("veqen")
 TAG_KEYS = ("customer", "feature", "user", "project", "environment", "run")
+_HINT = re.compile(r"[A-Za-z0-9_+/=.-]{4}")
+
+
+def key_hint(key: object) -> str | None:
+    """A provider key's last four characters: all Veqen ever sees of it, matched to the provider's own key list so
+    spend nobody tracked shows up per key."""
+    return key[-4:] if isinstance(key, str) and len(key) >= 16 and _HINT.fullmatch(key[-4:]) else None
 _tags: contextvars.ContextVar[dict | None] = contextvars.ContextVar("veqen_tags", default=None)
 
 
@@ -148,6 +156,7 @@ class _Client:
         status: str = "ok",
         cost_usd: float | None = None,
         variant: str | None = None,
+        key_hint: str | None = None,
     ) -> dict:
         self.ensure()
         book = price_book()
@@ -186,6 +195,7 @@ class _Client:
             "tags": {k: v for k, v in tags.items() if k not in TAG_KEYS},
             "latency_ms": latency_ms,
             "status": status,
+            **({"key_hint": key_hint} if key_hint else {}),
         }
         if cost_usd:
             self._spend(tags, cost_usd)
@@ -352,17 +362,20 @@ def record(
     service_tier: str | None = None,
     residency: str | None = None,
     cost_usd: float | None = None,
+    provider_key: str | None = None,
     **tag_values: str,
 ) -> dict:
     """Record a call you made yourself: batch jobs, gateways, self-hosted models, unsupported clients.
     ``units`` are images for image models, seconds for video and transcription, characters for speech,
     queries for rerank and pages for OCR; ``variant`` is an image size and quality ("hd/1024x1792") or a
-    video resolution ("1080p"). Pass ``cost_usd`` for models the price book doesn't know."""
+    video resolution ("1080p"). Pass ``cost_usd`` for models the price book doesn't know, and ``provider_key``
+    (the key the call used; only its last four characters are sent) so Veqen can match it to the provider's usage."""
     usage = Usage(input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cache_write_1h_tokens,
                   audio_input_tokens, audio_output_tokens, units)
     return client.record(
         provider, model, usage, tags={**current_tags(), **tag_values}, batch=batch,
         service_tier=service_tier, residency=residency, cost_usd=cost_usd, variant=variant,
+        key_hint=key_hint(provider_key),
     )
 
 

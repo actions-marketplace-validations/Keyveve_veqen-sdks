@@ -1,7 +1,7 @@
-// npx @veqen/sdk <init|scan|diff|audit|report> — local, offline-first tooling for AI inference cost.
+// npx @veqen/sdk <init|scan|diff|audit|report|coding-bill> — local, offline-first tooling for AI cost.
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { extname, join, relative } from "node:path";
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, extname, join, relative } from "node:path";
 import { parseArgs } from "node:util";
 import { lookup, priceBook, priceCall } from "./pricing.js";
 
@@ -108,7 +108,7 @@ async function productionVolumes() {
   try {
     const response = await fetch(`${endpoint}/v1/usage/models?days=30`, { headers: { Authorization: `Bearer ${key}`, "User-Agent": process.env.GITHUB_ACTIONS ? "veqen-action/1.0" : "veqen-cli/1.0" }, signal: AbortSignal.timeout(15_000) });
     if (response.ok) return { volumes: new Map((await response.json()).models.map((m) => [`${m.provider}/${m.model}`, m])) };
-    const reason = response.status === 402 ? "production volumes need a Pro or Team plan" : `the Veqen API answered HTTP ${response.status}`;
+    const reason = response.status === 402 ? "production volumes need a paid plan" : `the Veqen API answered HTTP ${response.status}`;
     return { note: `_Prices per call only: ${reason}._` };
   } catch (error) {
     return { note: `_Prices per call only: couldn't reach Veqen (${error.message})._` };
@@ -212,7 +212,75 @@ function runInit(dir) {
   console.log(lines.join("\n"));
 }
 
-const HELP = `veqen — the cost ledger for AI inference
+// Coding-tool exports, read by the column names Veqen's own import reads them by (CSV_WHO and CSV_USD in veqen_cloud/coding.py)
+const COLUMNS = { who: ["useremail", "email", "user", "userid", "login", "username"], usd: ["costusd", "totalcostusd", "netamount", "usd", "cost", "amount", "spend"],
+  email: ["useremail", "email"], team: ["team"] };
+const MAX_BYTES = 20_000_000; // as the server's import
+
+function parseCsv(text, path) {
+  const rows = [];
+  let row = [], field = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; } else if (c === '"') quoted = false; else field += c;
+    } else if (c === '"' && !field) quoted = true; // a quote inside a field is the quote itself, as the server's reader has it
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (quoted) throw new Error(`${path} has a quote that's never closed.`);
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => r.some((v) => v.trim()));
+}
+
+function readCsv(path, who, wanted, needs) { // { person, value } rows: the first non-empty `who` column, and the first `wanted` one
+  if (statSync(path).size > MAX_BYTES) throw new Error(`${path} is over 20 MB; split it by month.`);
+  const [header = [], ...rows] = parseCsv(readFileSync(path, "utf8").replace(/^﻿/, ""), path);
+  const names = header.map((h) => h.toLowerCase().replace(/[^a-z]/g, "")), find = (options) => options.map((o) => names.indexOf(o)).filter((i) => i >= 0);
+  const people = find(who), [value] = find(wanted);
+  if (!people.length || value === undefined) throw new Error(`${path} needs ${needs}.`);
+  return rows.map((r) => ({ person: (people.map((i) => (r[i] ?? "").trim()).find(Boolean) ?? "").toLowerCase(), value: (r[value] ?? "").trim() }))
+    .filter((r) => r.person);
+}
+
+function runCodingBill(args, opts) {
+  if (!args.length) throw new Error("Pass one export per tool, like cursor.csv copilot.csv claude-code.csv, or name the tool: cursor=usage.csv.");
+  const teams = new Map(opts.teams ? readCsv(opts.teams, COLUMNS.email, COLUMNS.team, "an email column and a team column").map((r) => [r.person, r.value]) : []);
+  const tools = [], people = new Map();
+  const amount = (text, path) => { // "($5.00)" is -5; a cost that isn't a number stops the bill, as the server's import does
+    const value = Number(text.replace(/[$,\s]/g, "").replace(/^\((.*)\)$/, "-$1"));
+    if (!Number.isFinite(value)) throw new Error(`${path} has a cost that isn't a number: ${text}`);
+    return value;
+  };
+  for (const arg of args) { // cursor.csv is Cursor's; cursor=usage.csv names the tool; files for the same tool add up
+    const named = !existsSync(arg) && /^([\w-]+)=(.+)$/s.exec(arg), [tool, path] = named ? [named[1], named[2]] : [basename(arg).replace(/\.[^.]+$/, ""), arg];
+    if (!tools.includes(tool)) tools.push(tool);
+    for (const { person, value } of readCsv(path, COLUMNS.who, COLUMNS.usd,
+      "a user or email column and a cost column (an export in credits needs the price per credit, which the dashboard's contracts hold)")) {
+      const costs = people.get(person) ?? {};
+      costs[tool] = (costs[tool] ?? 0) + amount(value, path);
+      people.set(person, costs);
+    }
+  }
+  const total = (costs) => tools.reduce((sum, tool) => sum + (costs[tool] ?? 0), 0);
+  const byTeam = new Map();
+  for (const [person, costs] of people) {
+    const name = teams.get(person) ?? "No team", team = byTeam.get(name) ?? { engineers: 0 };
+    byTeam.set(name, team);
+    team.engineers += 1;
+    for (const tool of tools) team[tool] = (team[tool] ?? 0) + (costs[tool] ?? 0);
+  }
+  const rank = (map) => [...map].sort((a, b) => total(b[1]) - total(a[1]));
+  console.log(table(rank(byTeam).map(([team, t]) => [team, t.engineers, ...tools.map((tool) => usd(t[tool])), usd(total(t))]), ["team", "engineers", ...tools, "total"]));
+  console.log(`\n${table(rank(people).slice(0, 10).map(([person, c]) => [person, teams.get(person) ?? "—", usd(total(c))]), ["costliest engineers", "team", "total"])}`);
+  console.log(`\n${people.size} engineers and ${usd([...people.values()].reduce((sum, c) => sum + total(c), 0))} in all, read on this machine with nothing uploaded.`
+    + "\nEveryone's work and coding agent bill at your contract prices, with limits in each tool: https://veqen-app.com/work-agents");
+}
+
+const HELP = `veqen — cost monitoring and protection for AI
 
   veqen init                     How to add Veqen to this project
   veqen scan [dir] [--json] [--fail-within DAYS]
@@ -222,10 +290,13 @@ const HELP = `veqen — the cost ledger for AI inference
   veqen audit [--provider openai|anthropic]
                                  Last 30 days of provider spend from an admin key, locally
   veqen report [ledger-file]     Costs by customer, feature and model from a local ledger
+  veqen coding-bill <export.csv>... [--teams teams.csv]
+                                 Each team's and engineer's coding-agent bill from your tools' exports, locally
 `;
 
 export async function main(argv = process.argv.slice(2)) {
-  const options = { json: { type: "boolean" }, format: { type: "string" }, provider: { type: "string" }, "fail-within": { type: "string" }, help: { type: "boolean", short: "h" } };
+  const options = { json: { type: "boolean" }, format: { type: "string" }, provider: { type: "string" }, "fail-within": { type: "string" }, teams: { type: "string" },
+    help: { type: "boolean", short: "h" } };
   try {
     const { positionals, values } = parseArgs({ args: argv, options, allowPositionals: true });
     const [command, arg] = values.help ? [] : positionals;
@@ -234,6 +305,7 @@ export async function main(argv = process.argv.slice(2)) {
     else if (command === "diff") await runDiff(arg ?? "origin/main", values);
     else if (command === "audit") await runAudit(values);
     else if (command === "report") runReport(arg ?? process.env.VEQEN_LEDGER_FILE ?? ".veqen/ledger.jsonl");
+    else if (command === "coding-bill") runCodingBill(positionals.slice(1), values);
     else console.log(HELP);
   } catch (error) {
     console.error(`veqen: ${error.message}`);

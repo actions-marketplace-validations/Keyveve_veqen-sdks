@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -136,6 +136,18 @@ test("wrap prices OpenAI calls and applies tags", async () => {
   assert.deepEqual([event.input_tokens, event.cache_read_tokens, event.output_tokens, event.customer, event.feature], [1000, 200, 300, "acme", "support"]);
   close(event.cost_usd, (1000 * 2.5 + 200 * 1.25 + 300 * 10) / 1e6);
   assert.deepEqual(client.models.list(), ["m"]);
+});
+
+test("calls carry only the last four characters of the provider key", async () => {
+  const events = ledger();
+  const client = new OpenAI(async () => chatCompletion);
+  client.apiKey = "sk-proj-abcdefghijklmnop1x9Z";
+  await wrap(client).chat.completions.create({ model: "gpt-4o" });
+  record("openai", "gpt-4o", { inputTokens: 10 }, { providerKey: "sk-ant-api03-zzzzzzzzzzzz-Q_7w" });
+  record("openai", "gpt-4o", { inputTokens: 10 }, { providerKey: "short" });
+  const [wrapped, manual, short] = events();
+  assert.deepEqual([wrapped.key_hint, manual.key_hint, short.key_hint], ["1x9Z", "Q_7w", undefined]);
+  assert.ok(!JSON.stringify(wrapped).includes("abcdefgh"));
 });
 
 test("streams request usage and record once when iteration ends", async () => {
@@ -362,4 +374,33 @@ test("cloud batches stay within the edge byte limit and preserve Unicode events"
   } finally {
     server.close();
   }
+});
+
+test("coding-bill turns tool exports into a bill per team, offline", () => {
+  const dir = mkdtempSync(join(tmpdir(), "veqen-bill-"));
+  writeFileSync(join(dir, "cursor.csv"), 'Date,User,Kind,Model,Cost\n2026-10-01,Ada@acme.test,Usage,gpt-5,"$1,204.50"\n2026-10-02,bo@acme.test,Usage,claude,12\n');
+  writeFileSync(join(dir, "usage.csv"), "date,username,product,net_amount\n2026-10-01,ada@acme.test,copilot,19.00\n");
+  writeFileSync(join(dir, "teams.csv"), "Email,Team\nada@acme.test,Platform\n");
+  const out = execFileSync(process.execPath, ["bin/veqen.js", "coding-bill", join(dir, "cursor.csv"), `copilot=${join(dir, "usage.csv")}`, "--teams", join(dir, "teams.csv")],
+    { encoding: "utf8" });
+  assert.match(out, /Platform\s+1\s+\$1204\.50\s+\$19\.00\s+\$1223\.50/);
+  assert.match(out, /No team\s+1\s+\$12\.00/);
+  assert.match(out, /2 engineers and \$1235\.50 in all/);
+});
+
+test("coding-bill adds up files for one tool, reads paths with = in them, and says what a file lacks", () => {
+  const dir = mkdtempSync(join(tmpdir(), "veqen-bill2-")), run = (...args) => execFileSync(process.execPath, ["bin/veqen.js", "coding-bill", ...args], { encoding: "utf8", stdio: "pipe" });
+  mkdirSync(join(dir, "q=1"));
+  writeFileSync(join(dir, "q=1", "cursor.csv"), "user,cost\nada@acme.test,10\n");
+  writeFileSync(join(dir, "more.csv"), "user,cost\nada@acme.test,($5.00)\nbo@acme.test,7\n");
+  const out = run(join(dir, "q=1", "cursor.csv"), `cursor=${join(dir, "more.csv")}`);
+  assert.match(out, /No team\s+2\s+\$12\.00\s+\$12\.00/);  // one cursor column: 10 - 5 + 7
+  writeFileSync(join(dir, "kiro.csv"), "date,email,credits\n2026-10-01,ada@acme.test,4\n");
+  writeFileSync(join(dir, "broken.csv"), 'user,cost\nada@acme.test,"10\n');
+  assert.throws(() => run(join(dir, "kiro.csv")), /needs a user or email column and a cost column \(an export in credits/);
+  assert.throws(() => run(join(dir, "broken.csv")), /quote that's never closed/);
+  writeFileSync(join(dir, "quoted.csv"), 'user,cost\nada "ace"@acme.test,4\n"bo@acme.test",n/a\n');
+  assert.throws(() => run(join(dir, "quoted.csv")), /a cost that isn't a number: n\/a/);  // a quote inside a field is just a quote
+  const relative = execFileSync(process.execPath, [join(process.cwd(), "bin/veqen.js"), "coding-bill", join("q=1", "cursor.csv")], { cwd: dir, encoding: "utf8" });
+  assert.match(relative, /1 engineers and \$10\.00 in all/);  // q=1/cursor.csv is a file, not tool q
 });

@@ -1,10 +1,12 @@
-# Scale AI inference without losing track of the bill
+# Veqen: cost monitoring and protection for AI
 
-Veqen shows what your AI requests cost and who they were for: a customer, a feature, a team or a project. Start with the free Python or JavaScript SDK; both work locally without an account. Connect the optional [Veqen dashboard](https://veqen-app.com/signup?utm_source=github&utm_medium=referral&utm_campaign=launch-v1-5) to see where spending goes, set budgets and check the totals against your provider bills.
+See who spent every AI dollar, and stop the ones nobody should have. Veqen brings work and coding agents together with product inference: cost per person, customer and project, key misuse incidents, provider bill checks and the month-end close.
 
-## Veqen 1.5 compatibility
+Start with the free Python or JavaScript SDK; both work locally without an account. Connect the optional [Veqen dashboard](https://veqen-app.com) to compare recorded usage with provider bills and investigate unexplained key spend. Shut-off needs separate permission and must be enabled by your organization.
 
-Python SDK 1.3.1 and JavaScript SDK 1.1.1 include agent-run attribution and correct billing-host attribution for Azure, Bedrock, Vertex and OpenRouter. Python also adds a LlamaIndex event handler. SDK and cloud versions are independent. [Release notes](https://veqen-app.com/docs/whats-new).
+## Veqen 2.0 compatibility
+
+Python SDK 1.4.0 and JavaScript SDK 1.2.0 add key hints to wrapped calls. Only the final four characters of the provider key are sent; matching hints can collide and do not prove who used a key. The JavaScript CLI also combines coding-agent CSV exports into a bill per person and team. SDK and cloud versions are independent. [Release notes](https://veqen-app.com/docs/whats-new).
 
 ## Python
 
@@ -47,6 +49,7 @@ npx @veqen/sdk@1 scan
 npx @veqen/sdk@1 diff origin/main
 npx @veqen/sdk@1 audit
 npx @veqen/sdk@1 report
+npx @veqen/sdk@1 coding-bill cursor.csv copilot.csv claude-code.csv --teams teams.csv
 ```
 
 Scan model references for prices and retirement dates, compare model changes, import provider usage locally with your admin key, or report on a local ledger. The [cost-review Action](github-action/README.md) adds a pull-request summary and optional retirement checks. It never executes the reviewed application's code. Use `pull_request`, not `pull_request_target`.

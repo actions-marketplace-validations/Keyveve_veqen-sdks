@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "veqen",
-  "version": "1.5.0",
-  "description": "Scale AI inference without losing track of the bill. See where your AI money goes, compare prices and manage budgets from your AI assistant.",
+  "version": "2.0.0",
+  "description": "See who spent every AI dollar and stop the ones nobody should have: each engineer's coding-agent cost, cost per customer and feature, stolen-key and unexplained-spend incidents, and how spending compares with your provider bills. Compare model prices without signing in.",
   "author": {
     "name": "Keyveve, Inc.",
     "email": "support@veqen-app.com",
@@ -11,5 +11,14 @@
   "homepage": "https://veqen-app.com/docs/mcp",
   "repository": "https://github.com/Keyveve/veqen-sdks",
   "license": "MIT",
-  "keywords": ["llm-cost", "ai-spend", "finops", "token-pricing", "budgets", "mcp"]
+  "keywords": [
+    "llm-cost",
+    "ai-spend",
+    "coding-agents",
+    "finops",
+    "fraud-protection",
+    "token-pricing",
+    "budgets",
+    "mcp"
+  ]
 }

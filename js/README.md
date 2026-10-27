@@ -1,6 +1,6 @@
 # veqen
 
-Scale AI inference without losing track of the bill. Veqen shows what your AI requests cost and who they were for: a customer, a feature or a project. Start locally without an account, then connect the optional dashboard to see where spending goes and compare it with your provider bills. Includes the `veqen` CLI.
+Veqen is cost monitoring and protection for AI. The SDK shows what your AI requests cost and who they were for: a customer, a feature or a project, and tells Veqen which key made each one, so spend nobody on your team made stands out. Start locally without an account, then connect the optional dashboard to see where spending goes and compare it with your provider bills. Includes the `veqen` CLI.
 
 ```bash
 npm install @veqen/sdk
@@ -35,9 +35,13 @@ npx @veqen/sdk scan                  # models in your code: prices, retirement d
 npx @veqen/sdk diff origin/main      # cost impact of model changes in this branch (--format markdown|json)
 npx @veqen/sdk audit                 # last 30 days from your OpenAI or Anthropic admin key, locally
 npx @veqen/sdk report                # cost by customer, feature and model from a local ledger (init({ ledgerFile }))
+npx @veqen/sdk coding-bill cursor.csv copilot.csv claude-code.csv --teams teams.csv
+                                     # each team's and engineer's coding-agent bill from your tools' exports, offline
 ```
 
-In serverless functions, `await flush()` before returning. Set `VEQEN_API_KEY` to send calls to the [Veqen dashboard](https://veqen-app.com/signup?utm_source=javascript-sdk&utm_medium=package&utm_campaign=launch-v1-5) for shared budgets, reconciliation with your provider bills, custom and self-hosted prices, margin per customer and month-end journal entries. Free for 60,000 tracked calls a month.
+`coding-bill` reads any export with a user or email column and a cost column, naming each tool after its file, or `tool=file.csv`; files for one tool add up. `--teams` takes a CSV with email and team columns. Nothing is uploaded. Calls through the SDK also carry the last four characters of the provider key, so Veqen can tell which key made them and catch spend nobody on your team made.
+
+In serverless functions, `await flush()` before returning. Set `VEQEN_API_KEY` to send calls to the [Veqen dashboard](https://veqen-app.com/signup?utm_source=javascript-sdk&utm_medium=package&utm_campaign=launch-v1-5) for shared budgets, reconciliation with your provider bills, custom and self-hosted prices, margin per customer and month-end journal entries. Free up to $1,000 of tracked AI spend a month.
 
 Docs: https://veqen-app.com/docs/javascript · Model prices: https://veqen-app.com/models · MIT licensed.
 

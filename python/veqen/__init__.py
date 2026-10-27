@@ -1,4 +1,4 @@
-"""Veqen: the cost ledger for AI inference.
+"""Veqen: cost monitoring and protection for AI.
 
     import veqen
     from openai import OpenAI
@@ -15,7 +15,7 @@ from veqen.client import BudgetExceeded, budget, current_tags, flush, init, reco
 from veqen.pricing import Price, PriceBook, Usage, cost, lookup, price_book
 from veqen.wrap import wrap
 
-__version__ = "1.3.1"
+__version__ = "1.4.0"
 __all__ = [
     "BudgetExceeded",
     "Price",

@@ -40,4 +40,4 @@ Package version `YYYY.M.D` identifies the bundled snapshot date. Pin the version
 
 Provider prices and availability can change. These are list prices and verified billing rules, not your contract, tax treatment or invoice. Reconcile recorded usage against your provider's bill before treating an estimate as an accounting balance.
 
-MIT licensed. Derived LiteLLM data retains Berri AI's copyright and MIT notice in `THIRD_PARTY_NOTICES`. [Veqen](https://veqen-app.com) is the cost ledger for AI inference.
+MIT licensed. Derived LiteLLM data retains Berri AI's copyright and MIT notice in `THIRD_PARTY_NOTICES`. [Veqen](https://veqen-app.com) provides cost monitoring and protection for AI.

@@ -48,6 +48,16 @@ def test_litellm_callback(ledger):
     assert (event["customer"], event["latency_ms"], event["input_tokens"]) == ("acme", 420, 100)
 
 
+def test_litellm_sends_the_hint_of_the_key_it_used_even_from_the_environment(ledger, monkeypatch):
+    from veqen.integrations.litellm import provider_key_hint
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-abcdefghijklmnop-k9Zq")
+    assert provider_key_hint({"api_key": "sk-proj-abcdefghijklmnop1x9Z"}) == "1x9Z"
+    assert provider_key_hint({"custom_llm_provider": "anthropic"}) == "k9Zq"
+    assert provider_key_hint({"api_key": "os.environ/ANTHROPIC_API_KEY", "custom_llm_provider": "anthropic"}) == "k9Zq"
+    assert provider_key_hint({"custom_llm_provider": "groq"}) is None
+
+
 def test_openai_agents_processor_records_response_and_generation_spans(ledger):
     from veqen.integrations.openai_agents import VeqenTracingProcessor
 

@@ -30,6 +30,17 @@ def test_openai_chat_is_priced_and_tagged(ledger):
     assert wrapped.models.list() == ["m"]  # untouched methods pass through
 
 
+def test_calls_carry_only_the_last_four_characters_of_the_provider_key(ledger):
+    wrapped = veqen.wrap(fake_client("openai._client", api_key="sk-proj-abcdefghijklmnop1x9Z",
+                                     chat=NS(completions=NS(create=lambda **kw: chat_completion()))))
+    wrapped.chat.completions.create(model="gpt-4o", messages=[])
+    veqen.record("gpt-4o", provider="openai", input_tokens=10, provider_key="short")  # too short to be a key: no hint
+    veqen.record("gpt-4o", provider="openai", input_tokens=10, provider_key="sk-ant-api03-zzzzzzzzzzzz-Q_7w")
+    wrapped_event, short, manual = ledger()
+    assert wrapped_event["key_hint"] == "1x9Z" and "key_hint" not in short and manual["key_hint"] == "Q_7w"
+    assert "abcdefgh" not in str(wrapped_event)
+
+
 def test_openai_compatible_hosts_are_priced_as_the_host(ledger):
     together = openai_client(lambda **kw: chat_completion(model="Qwen/Qwen3.5-9B", cached=0))
     together.base_url = "https://api.together.xyz/v1/"
