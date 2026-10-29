@@ -25,6 +25,7 @@ Every call is priced from the usage the provider reports, with cached input, cac
 - **Vercel AI SDK** middleware: `import { veqen } from "@veqen/sdk/ai-sdk"` and `wrapLanguageModel({ model, middleware: veqen() })`.
 - **LangChain.js**: `import { VeqenCallbackHandler } from "@veqen/sdk/langchain"`.
 - **Budgets**: `budget(5, { customer: "*" })` throws `BudgetExceeded` before subsequent wrapped calls once recorded spend reaches the limit.
+- **Agent spend** (beta): before an agent pays for something, `await checkSpend({ agent: "procurement-bot", amount: 120, payee: "Acme Supplies" })` answers allow, approval or deny from the agent's mandate (`.allowed`), and `recordAction({ ... })` tells Veqen afterwards; each is matched to the card or account transaction. It needs `VEQEN_API_KEY`, and without it, or when Veqen can't be reached, the answer is deny unless you pass `onError: "allow"`. [Agent spend docs](https://veqen-app.com/docs/agent-spend)
 - **Price** without recording: `cost("gpt-4o", { inputTokens: 1000, outputTokens: 500 })`; the price book is `@veqen/sdk/prices`.
 
 ## CLI

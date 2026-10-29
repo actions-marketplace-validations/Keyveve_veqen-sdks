@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
-import { budget, BudgetExceeded, cost, flush, init, lookup, providerForUrl, record, unitRate, withTags, wrap } from "../src/index.js";
+import { budget, BudgetExceeded, checkSpend, cost, flush, init, lookup, providerForUrl, record, unitRate, withTags, wrap } from "../src/index.js";
 import { veqen as middleware } from "../src/ai-sdk.js";
 import { scan } from "../src/cli.js";
 import { _reset } from "../src/core.js";
@@ -403,4 +403,26 @@ test("coding-bill adds up files for one tool, reads paths with = in them, and sa
   assert.throws(() => run(join(dir, "quoted.csv")), /a cost that isn't a number: n\/a/);  // a quote inside a field is just a quote
   const relative = execFileSync(process.execPath, [join(process.cwd(), "bin/veqen.js"), "coding-bill", join("q=1", "cursor.csv")], { cwd: dir, encoding: "utf8" });
   assert.match(relative, /1 engineers and \$10\.00 in all/);  // q=1/cursor.csv is a file, not tool q
+});
+
+test("checkSpend asks Veqen, and fails closed when Veqen can't answer", async () => {
+  assert.equal((await checkSpend({ agent: "bot", amount: 5 })).decision, "deny");
+  let asked;
+  const server = createServer((req, res) => {
+    const body = [];
+    req.on("data", (c) => body.push(c));
+    req.on("end", () => {
+      asked = JSON.parse(Buffer.concat(body));
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ decision: "approval", action_id: asked.action_id, reasons: ["A person approves anything over $1.00"], remaining_month_usd: 95 }));
+    });
+  });
+  await new Promise((r) => server.listen(0, r));
+  init({ apiKey: "vq_live_test", endpoint: `http://127.0.0.1:${server.address().port}`, budgetPollMs: 0 });
+  const answer = await withTags({ run: "run-1" }, () => checkSpend({ agent: "bot", amount: 5, payee: "Acme" }));
+  server.close();
+  assert.deepEqual([answer.decision, answer.allowed, answer.remainingMonthUsd, asked.run, asked.payee], ["approval", false, 95, "run-1", "Acme"]);
+  init({ apiKey: "vq_live_test", endpoint: "http://127.0.0.1:9", budgetPollMs: 0 });
+  assert.equal((await checkSpend({ agent: "bot", amount: 5 })).allowed, false);
+  assert.equal((await checkSpend({ agent: "bot", amount: 5, onError: "allow" })).allowed, true);
 });

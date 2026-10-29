@@ -247,3 +247,35 @@ export function _reset() {
   clearInterval(state.timer);
   Object.assign(state, { apiKey: "", ledgerFile: undefined, queue: [], budgets: [], blocked: new Map(), timer: null, configured: false, lastPoll: 0 });
 }
+
+
+const action = ({ agent, amount, run = currentTags().run, ...fields }) => ({
+  agent, amount, ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== "")), ...(run ? { run } : {}),
+});
+
+// Ask Veqen before an agent spends money: its mandate decides allow, approval (a person decides; ask again with the same
+// actionId) or deny. Without an API key, or when Veqen can't be reached, the answer is onError ("deny" by default).
+export async function checkSpend({ onError = "deny", actionId = crypto.randomUUID().replaceAll("-", ""), ...fields }) {
+  ensure();
+  if (!state.apiKey) return { decision: onError, actionId, reasons: ["No Veqen API key is set"], allowed: onError === "allow" };
+  try {
+    const response = await request("POST", "/v1/agent-actions/check", { ...action(fields), action_id: actionId });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const answer = await response.json();
+    return { decision: answer.decision, actionId: answer.action_id, reasons: answer.reasons ?? [], approval: answer.approval ?? null,
+             remainingMonthUsd: answer.remaining_month_usd ?? null, allowed: answer.decision === "allow" };
+  } catch (error) {
+    return { decision: onError, actionId, reasons: [`Veqen couldn't be reached (${error.name})`], allowed: onError === "allow" };
+  }
+}
+
+// Tell Veqen what an agent did with money, after the fact. Resolves to whether Veqen took it; never rejects.
+export async function recordAction(fields) {
+  ensure();
+  if (!state.apiKey) return false;
+  try {
+    return (await request("POST", "/v1/agent-actions", { actions: [action(fields)] })).ok;
+  } catch {
+    return false;
+  }
+}

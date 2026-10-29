@@ -1,6 +1,6 @@
 [project]
 name = "veqen"
-version = "1.4.0"
+version = "1.5.0"
 description = "What every AI request costs, by customer, feature or project, with the key hint that lets Veqen catch stolen keys."
 readme = "README.md"
 requires-python = ">=3.10"

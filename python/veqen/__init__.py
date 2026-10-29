@@ -11,17 +11,30 @@ Every call is priced exactly (caching, batch, tiers) and attributed to the custo
 caused it. Without an API key everything stays local; with VEQEN_API_KEY it reaches your Veqen ledger.
 """
 
-from veqen.client import BudgetExceeded, budget, current_tags, flush, init, record, tags
+from veqen.client import (
+    BudgetExceeded,
+    SpendDecision,
+    budget,
+    check_spend,
+    current_tags,
+    flush,
+    init,
+    record,
+    record_action,
+    tags,
+)
 from veqen.pricing import Price, PriceBook, Usage, cost, lookup, price_book
 from veqen.wrap import wrap
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __all__ = [
     "BudgetExceeded",
+    "SpendDecision",
     "Price",
     "PriceBook",
     "Usage",
     "budget",
+    "check_spend",
     "cost",
     "current_tags",
     "flush",
@@ -29,6 +42,7 @@ __all__ = [
     "lookup",
     "price_book",
     "record",
+    "record_action",
     "tags",
     "wrap",
 ]

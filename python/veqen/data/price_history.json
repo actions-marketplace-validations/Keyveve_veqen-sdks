@@ -35,5 +35,259 @@
   "date": "2026-10-22",
   "model": "deepgram/streaming/redact",
   "change": "removed"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/Phi-4",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/Phi-4-mini-instruct",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/Phi-4-mini-reasoning",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/Phi-4-multimodal-instruct",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/Phi-4-reasoning",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "azure-ai/gpt-chat-latest",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-fable-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-fable-5-1",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-haiku-4-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-haiku-5-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-4-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-4-6",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-4-7",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-4-8",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-opus-5-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-sonnet-4-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-sonnet-4-6",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-sonnet-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "bedrock/claude_platform/claude-sonnet-5-5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "cerebras/llama-3.1-70b",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "cerebras/llama-3.1-8b",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_flash_v2",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_flash_v2_5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_multilingual_v2",
+  "field": "unit",
+  "old": 0.00018,
+  "new": 8e-05
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_turbo_v2",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_turbo_v2_5",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_v3",
+  "field": "unit",
+  "old": 0.00018,
+  "new": 8e-05
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_v3_conversational",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_v4",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "elevenlabs/eleven_v4_turbo",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-2.5-flash",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-2.5-flash-lite",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-3-flash-preview",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-3.1-flash-lite",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-gemma-2-27b-it",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "google/gemini-gemma-2-9b-it",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-transcribe-3",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-transcribe-3-0",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-transcribe-realtime-3",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-transcribe-realtime-3-0",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-tts-3",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-mini-tts-3-0",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-small-transcribe-3",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/voxtral-small-transcribe-3-0",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "mistral/zai-glm-5-3-flash",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "openai/gpt-6.1-terra",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "together/MiniMaxAI/MiniMax-M3",
+  "change": "updated"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "together/MiniMaxAI/MiniMax-M3.1-Flash",
+  "change": "added"
+ },
+ {
+  "date": "2026-10-28",
+  "model": "together/thinkingmachines/Inkling",
+  "change": "updated"
  }
 ]

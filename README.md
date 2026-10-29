@@ -72,6 +72,12 @@ Already using OpenLLMetry? Follow the tested [Collector setup](examples/openllme
 
 Connect to `https://veqen-app.com/mcp` using OAuth or a full-access Veqen API key. Root `plugin.json`, `mcp.json` and [skills](skills/) describe the agent integration. The public `https://veqen-app.com/mcp/prices` server needs no sign-in and offers model prices, comparisons and workload simulation. See [connection instructions](https://veqen-app.com/docs/mcp) and [agent documentation](https://veqen-app.com/docs/agents).
 
+To add the Veqen skill to Claude Code, Codex, Cursor or any agent the [skills CLI](https://github.com/vercel-labs/skills) supports, run the command below. Leave out `-g` to add it to the current project only.
+
+```bash
+npx skills add Keyveve/veqen-sdks@veqen-costs -g
+```
+
 ## Migrating from 0.x
 
 Version 1 is a different product and a breaking API change. The old `Veqen().signup(...)` risk-check client and 0.x versions of the `@veqen/sdk` JavaScript package are not compatible with these APIs. Remove those integrations before upgrading; the retired signup-check endpoints must not be used for new implementations. The historical `data/` blocklist remains for attribution and compatibility, but is no longer refreshed here.

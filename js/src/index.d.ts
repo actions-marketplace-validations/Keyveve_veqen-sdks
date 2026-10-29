@@ -67,6 +67,27 @@ export declare function record(
   options?: CostOptions & { tags?: Tags; latencyMs?: number; costUsd?: number; /** the provider key the call used: only its last four characters are sent */ providerKey?: string },
 ): LedgerEvent;
 export declare function flush(): Promise<boolean>;
+export interface SpendAction {
+  agent: string;
+  amount: number;
+  currency?: string;
+  payee?: string;
+  purpose?: string;
+  rail?: "card" | "ach" | "wire" | "stablecoin" | "invoice" | "other";
+  kind?: "purchase" | "payment" | "transfer" | "subscription" | "refund" | "other";
+  card?: string;
+  run?: string;
+}
+export interface SpendDecision {
+  decision: "allow" | "approval" | "deny";
+  actionId: string;
+  reasons: string[];
+  approval?: { id: number; state: string; expires_at: string; note?: string | null } | null;
+  remainingMonthUsd?: number | null;
+  allowed: boolean;
+}
+export declare function checkSpend(action: SpendAction & { actionId?: string; onError?: "allow" | "deny" }): Promise<SpendDecision>;
+export declare function recordAction(action: SpendAction & { action_id?: string; at?: string }): Promise<boolean>;
 export declare function cost(model: string, usage: Usage, options?: CostOptions): number | null;
 export declare function lookup(model: string, provider?: string): Price | null;
 export declare function priceCall(price: Price, usage: Usage, options?: CostOptions): number | null;

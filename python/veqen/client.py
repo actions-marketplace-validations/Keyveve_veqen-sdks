@@ -381,3 +381,60 @@ def record(
 
 def flush(timeout: float = 5.0) -> bool:
     return client.flush(timeout)
+
+
+@dataclass
+class SpendDecision:
+    """Veqen's answer before an agent spends: ``allow``, ``approval`` (a person decides; ask again with the same
+    ``action_id``) or ``deny``, with the reasons."""
+
+    decision: str
+    action_id: str
+    reasons: list = field(default_factory=list)
+    approval: dict | None = None
+    remaining_month_usd: float | None = None
+
+    @property
+    def allowed(self) -> bool:
+        return self.decision == "allow"
+
+
+def _action(agent: str, amount: float, fields: dict) -> dict:
+    run = fields.pop("run", None) or current_tags().get("run")
+    given = {k: v for k, v in fields.items() if v not in (None, "")}
+    return {"agent": agent, "amount": amount, **given, **({"run": run} if run else {})}
+
+
+def check_spend(agent: str, amount: float, *, payee: str = "", purpose: str = "", currency: str | None = None,
+                rail: str | None = None, kind: str | None = None, card: str = "", run: str | None = None,
+                action_id: str | None = None, on_error: str = "deny") -> SpendDecision:
+    """Ask Veqen before an agent spends money: its mandate decides. The action is recorded and matched to the card or
+    account transaction when it appears. Without an API key, or when Veqen can't be reached, the answer is
+    ``on_error`` ("deny" by default, so an agent never spends unchecked)."""
+    client.ensure()
+    action_id = action_id or uuid.uuid4().hex
+    if not client.api_key:
+        return SpendDecision(on_error, action_id, ["No Veqen API key is set"])
+    body = _action(agent, amount, {"payee": payee, "purpose": purpose, "currency": currency, "rail": rail,
+                                   "kind": kind, "card": card, "run": run, "action_id": action_id})
+    try:
+        answer = client._request("POST", "/v1/agent-actions/check", json.dumps(body).encode())
+    except (OSError, ValueError) as exc:  # urllib's errors are OSErrors; a body Veqen didn't send is a ValueError
+        log.warning("Veqen couldn't check the spend: %s", exc)
+        return SpendDecision(on_error, action_id, [f"Veqen couldn't be reached ({type(exc).__name__})"])
+    return SpendDecision(answer["decision"], answer["action_id"], answer.get("reasons") or [], answer.get("approval"),
+                         answer.get("remaining_month_usd"))
+
+
+def record_action(agent: str, amount: float, **fields) -> bool:
+    """Tell Veqen what an agent did with money, after the fact (payee, purpose, currency, rail, kind, card, run,
+    action_id, at). Returns whether Veqen took it; it never raises into your code."""
+    client.ensure()
+    if not client.api_key:
+        return False
+    try:
+        client._request("POST", "/v1/agent-actions", json.dumps({"actions": [_action(agent, amount, fields)]}).encode())
+        return True
+    except (OSError, ValueError) as exc:
+        log.warning("Veqen couldn't record the action: %s", exc)
+        return False
