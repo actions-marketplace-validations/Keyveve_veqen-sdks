@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Keyveve/veqen-pricing",
+  "title": "Veqen Pricing: AI model costs",
+  "description": "Compare AI model prices and estimate workload costs with four read-only tools. No account needed.",
+  "version": "2.0.0",
+  "websiteUrl": "https://veqen-app.com/models",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://veqen-app.com/mcp/prices"
+    }
+  ]
+}
