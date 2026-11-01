@@ -1,0 +1,86 @@
+name: Publish public pricing MCP listing
+
+on:
+  pull_request:
+    paths: ['mcp-pricing-registry/**', '.github/workflows/publish-pricing-mcp.yml']
+  workflow_dispatch:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+        description: Publish the public pricing entry to the official MCP Registry
+      version:
+        type: string
+        required: true
+        description: Exact registry entry version
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pricing-mcp
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mcp-pricing-registry
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install verified publisher release
+        run: |
+          set -euo pipefail
+          curl --max-time 60 -fsSL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o publisher.tar.gz
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz' | sha256sum --check
+          tar -xzf publisher.tar.gz mcp-publisher
+          ./mcp-publisher validate
+      - name: Verify the exact public entry and live read-only tools
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+          entry = json.loads(Path('server.json').read_text())
+          assert entry['name'] == 'io.github.Keyveve/veqen-pricing'
+          assert not os.environ['RELEASE_VERSION'] or entry['version'] == os.environ['RELEASE_VERSION']
+          url = 'https://veqen-app.com/mcp/prices'
+          assert entry['remotes'] == [{'type': 'streamable-http', 'url': url}]
+          request = urllib.request.Request(url, data=json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}).encode(),
+                                           headers={'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream'})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              tools = json.load(response)['result']['tools']
+          assert {tool['name'] for tool in tools} == {'get_model_price', 'list_models', 'compare_models', 'simulate_workload'}
+          assert all(tool.get('annotations', {}).get('readOnlyHint') is True for tool in tools)
+          print('Anonymous public endpoint exposes exactly four read-only pricing tools.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-pricing-listing
+          path: |
+            mcp-pricing-registry/server.json
+            mcp-pricing-registry/publisher.tar.gz
+          if-no-files-found: error
+
+  publish:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: mcp-pricing
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: verified-pricing-listing}
+      - name: Publish verified metadata with short-lived GitHub identity
+        run: |
+          set -euo pipefail
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz' | sha256sum --check
+          tar -xzf publisher.tar.gz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
