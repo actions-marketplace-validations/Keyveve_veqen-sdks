@@ -1,0 +1,72 @@
+name: Publish Cost Lens to Open VSX
+
+on:
+  pull_request:
+    paths: ['vscode-extension/**', '.github/workflows/publish-extension.yml']
+  workflow_dispatch:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+        description: Publish the tested VSIX to Open VSX
+      version:
+        type: string
+        required: true
+        description: Exact extension version to publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-cost-lens-openvsx
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: vscode-extension
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with: {node-version: '24', package-manager-cache: false}
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
+      - run: npm run prepare-data
+      - run: npm test
+      - name: Check publisher, package and requested version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node -e "const p=require('./package.json'); if(p.publisher!=='Keyveve'||p.name!=='veqen-cost-lens'||(process.env.RELEASE_VERSION&&p.version!==process.env.RELEASE_VERSION)) process.exit(1)"
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cost-lens-openvsx
+          path: vscode-extension/*.vsix
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: openvsx
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v6
+        with: {node-version: '24', package-manager-cache: false}
+      - uses: actions/download-artifact@v4
+        with: {name: cost-lens-openvsx, path: dist}
+      - name: Publish tested artifact using short-lived GitHub identity
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          test -n "$RELEASE_VERSION"
+          test -f "dist/veqen-cost-lens-$RELEASE_VERSION.vsix"
+          npx --yes ovsx@1.3.0 publish "dist/veqen-cost-lens-$RELEASE_VERSION.vsix" --trusted-publishing
