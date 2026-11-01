@@ -2,7 +2,7 @@
   "name": "veqen-cost-lens",
   "displayName": "Veqen AI Cost Lens",
   "description": "See AI model prices as you code. Hover a model name or find the models in your project. No account or code uploads.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "Keyveve",
   "license": "MIT",
   "engines": {

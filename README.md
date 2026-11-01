@@ -54,6 +54,30 @@ npx @veqen/sdk@1 coding-bill cursor.csv copilot.csv claude-code.csv --teams team
 
 Scan model references for prices and retirement dates, compare model changes, import provider usage locally with your admin key, or report on a local ledger. The [cost-review Action](github-action/README.md) adds a pull-request summary and optional retirement checks. It never executes the reviewed application's code. Use `pull_request`, not `pull_request_target`.
 
+### Add AI cost review to GitHub pull requests
+
+```yaml
+name: AI cost review
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: Keyveve/veqen-sdks@v1
+```
+
+No Veqen account is needed to compare model list prices. The optional `api-key` input adds recorded production volume for monthly estimates. Fork pull requests receive a job summary when comment permissions are unavailable. See [Action inputs and limitations](github-action/README.md) and the [GitHub Marketplace listing](https://github.com/marketplace/actions/veqen-ai-cost-review).
+
+### Offline AI model price data
+
+Install `veqen-pricebook` from [PyPI](https://pypi.org/project/veqen-pricebook/) or `@veqen/pricebook` from [npm](https://www.npmjs.com/package/@veqen/pricebook) when you only need a dated price snapshot. These data-only packages contain no tracking or inference dependencies. See the [price-book package guide](pricebook-packages/README.md) and [billing rules](https://veqen-app.com/docs/price-book).
+
 ## Accuracy, budgets and privacy
 
 Costs use provider-reported usage and the bundled price book, including supported cache, batch, tier and residency rules. Negotiated rates, missing usage and unsupported model variants need explicit prices or reconciliation; calculated costs are not a provider invoice. Derived price data retains its [upstream MIT attribution](pricebook/THIRD_PARTY_NOTICES).
@@ -64,7 +88,7 @@ No account or network reporting is required for local cost tracking. Set `VEQEN_
 
 ## Agent integration
 
-Try the [live AI cost starter](https://veqen-ai-cost-starter.vercel.app/) and its [Next.js / Vercel AI SDK source](examples/vercel-ai-cost-starter/) to see an AI response alongside its estimated cost. The default demo needs no API keys and makes no inference requests. [Veqen AI Cost Lens on Open VSX](https://open-vsx.org/extension/Keyveve/veqen-cost-lens) adds offline model-price hovers and a local model inventory. Its publisher ownership review is pending; the listing currently displays an unverified-publisher warning. You can also [build and install the VSIX](vscode-extension/).
+Try the [live AI cost starter](https://veqen-ai-cost-starter.vercel.app/) and its [Next.js / Vercel AI SDK source](examples/vercel-ai-cost-starter/) to see an AI response alongside its estimated cost. The default demo needs no API keys and makes no inference requests. Veqen AI Cost Lens adds offline model-price hovers and a local model inventory. Install it from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Keyveve.veqen-cost-lens) or [Open VSX](https://open-vsx.org/extension/Keyveve/veqen-cost-lens), where Keyveve's namespace ownership is verified. You can also [build and install the VSIX](vscode-extension/).
 
 The [Veqen Pricing plugin package](plugins/veqen-pricing/) exposes only the four public read-only pricing tools. The package is prepared for directory review; this repository does not imply directory approval.
 
