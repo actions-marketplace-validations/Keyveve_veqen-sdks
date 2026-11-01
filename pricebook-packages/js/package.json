@@ -1,6 +1,6 @@
 {
   "name": "@veqen/pricebook",
-  "version": "2026.10.28",
+  "version": "2026.10.30",
   "description": "Dated AI model prices, cache rates and billing rules. Offline, with no tracking dependencies.",
   "type": "module",
   "main": "./index.js",
